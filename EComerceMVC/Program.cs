@@ -1,4 +1,6 @@
 using EComerceMVC.Data;
+using EComerceMVC.Helpers;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,6 +20,10 @@ builder.Services.AddSession(options =>
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
 });
+
+builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
+
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie();
 
 var app = builder.Build();
 

@@ -10,9 +10,12 @@ namespace EComerceMVC.Controllers
     public class CartController : Controller
     {
         private readonly Hshop2023Context db;
-        public CartController(Hshop2023Context context)
+        private readonly PaypalClient _paypalClient;
+
+        public CartController(Hshop2023Context context, PaypalClient paypalClient)
         {
             db = context;
+            _paypalClient = paypalClient;
         }
 
         public List<CartItem> Cart => HttpContext.Session.Get<List<CartItem>>(MySetting.CART_KEY) ?? new List<CartItem>();
@@ -73,10 +76,11 @@ namespace EComerceMVC.Controllers
                 return Redirect("/");
             }
 
+            ViewBag.PaypalClientId = _paypalClient.ClientId;
             return View(Cart);
         }
 
-        
+
         [Authorize]
         [HttpPost]
         public IActionResult Checkout(CheckoutViewModel model)
@@ -137,5 +141,53 @@ namespace EComerceMVC.Controllers
 
             return View(Cart);
         }
+
+        [Authorize]
+        public IActionResult PaymentSuccess()
+        {
+            return View("Success");
+        }
+
+        #region Paypal Payment
+        [Authorize]
+        [HttpPost("/Cart/create-paypal-order")]
+        public async Task<IActionResult> CreatePaypalOrder(CancellationToken cancellationToken)
+        {
+            //Thong tin cua don hang gui qua Paypal
+            var tongTien = Cart.Sum(p => p.ThanhTien).ToString();
+            var donViTienTe = "USD";
+            var maDonHangThamChieu = "DH" + DateTime.Now.Ticks.ToString();
+            try
+            {
+                var response = await _paypalClient.CreateOrder(tongTien, donViTienTe, maDonHangThamChieu);
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                var error = new { ex.GetBaseException().Message };
+                return BadRequest(error);
+            }
+        }
+
+        [Authorize]
+        [HttpPost("/Cart/capture-paypal-order")]
+        public async Task<IActionResult> CapturePaypalOrder(string orderId, CancellationToken cancellationToken)
+        {
+            try
+            {
+                var response = await _paypalClient.CaptureOrder(orderId);
+
+                // Luu database don hang
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                var error = new { ex.GetBaseException().Message };
+                return BadRequest(error);
+            }
+        }
+
+        #endregion
     }
 }

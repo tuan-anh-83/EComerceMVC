@@ -1,4 +1,4 @@
-using EComerceMVC.Data;
+﻿using EComerceMVC.Data;
 using EComerceMVC.Helpers;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
@@ -28,6 +28,13 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     options.LoginPath = "/KhachHang/DangNhap";
     options.AccessDeniedPath = "/AccessDenied";
 });
+
+//đăng ký PaypalClient dạng Singleton() - chỉ có 1 instance duy nhất toàn bộ ứng dụng
+builder.Services.AddSingleton(x => new PaypalClient(
+    builder.Configuration["PaypalOptions:AppId"],
+    builder.Configuration["PaypalOptions:AppSecret"],
+    builder.Configuration["PaypalOptions:Mode"]
+));
 
 var app = builder.Build();
 
